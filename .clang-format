@@ -1,31 +1,51 @@
 BasedOnStyle: LLVM
 
-IndentWidth: 4
-ColumnLimit: 100
-
 Language: Cpp
-Standard: C++20
+Standard: Cpp20
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
 
 BreakBeforeBraces: Attach
 AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 
 PointerAlignment: Left
-
-SortIncludes: CaseSensitive
-IncludeCategories:
-  - Regex:           '^<[^.]*>$'
-    Priority:        1
-  - Regex:           '^(<SFML/|<sol/|<imgui.h|.*json.hpp).*'
-    Priority:        2
-  - Regex:           '.*'
-    Priority:        3
+ReferenceAlignment: Left
 
 AccessModifierOffset: -4
+
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+
+BinPackArguments: false
+BinPackParameters: false
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<[^.]*>$'
+    Priority: 1
+  - Regex: '^(<SFML/|<sol/|<imgui.h|.*json.hpp).*'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
 
 SpaceAfterTemplateKeyword: true
 SpaceBeforeRangeBasedForLoopDeclaration: true
 
+AlignAfterOpenBracket: Align
+AlignOperands: true
+AlignTrailingComments: true
 
-ConstructorInitializerIndentWidth: 4
-BinPackArguments: false
-BinPackParameters: false
+SpacesInParentheses: false
+SpacesInAngles: false
+
+IndentCaseLabels: true
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
