@@ -1,159 +1,152 @@
-cmake_minimum_required(VERSION 3.16)
-project(DICE VERSION 1.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20)
 
-# C++ standard
+project(dice LANGUAGES CXX)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+include(FetchContent)
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/third-party" CACHE PATH "" FORCE)
 
-# Compiler flags
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-# Options
-option(BUILD_TESTS "Build tests" ON)
-option(BUILD_EDITOR "Build editor" ON)
-option(ENABLE_NETWORK "Enable networking features" ON)
+# ----------------------------
+# SFML
+# ----------------------------
+set(SFML_BUILD_GRAPHICS      ON  CACHE BOOL "" FORCE)
+set(SFML_BUILD_WINDOW        ON  CACHE BOOL "" FORCE)
+set(SFML_BUILD_NETWORK       ON  CACHE BOOL "" FORCE)
+set(SFML_BUILD_SYSTEM        ON  CACHE BOOL "" FORCE)
+set(SFML_BUILD_AUDIO         OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_EXAMPLES      OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_DOC           OFF CACHE BOOL "" FORCE)
+set(SFML_USE_STATIC_STD_LIBS OFF CACHE BOOL "" FORCE)
 
-# Include directories
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/external)
-
-# Find packages
-find_package(SFML 2.5 COMPONENTS system window graphics network audio REQUIRED)
-find_package(Lua REQUIRED)
-
-# External libraries paths
-set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
-set(JSON_DIR ${PROJECT_SOURCE_DIR}/external/json)
-set(SOL2_DIR ${PROJECT_SOURCE_DIR}/external/sol2)
-set(SPDLOG_DIR ${PROJECT_SOURCE_DIR}/external/spdlog)
-
-# ImGui sources
-set(IMGUI_SOURCES
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+FetchContent_Declare(
+  SFML
+  GIT_REPOSITORY https://github.com/SFML/SFML.git
+  GIT_TAG        2.6.1
 )
 
-# Include ImGui headers
-include_directories(${IMGUI_DIR})
-include_directories(${IMGUI_DIR}/backends)
-include_directories(${JSON_DIR}/include)
-include_directories(${SOL2_DIR}/include)
-include_directories(${SPDLOG_DIR}/include)
-include_directories(${LUA_INCLUDE_DIR})
-
-# Core library sources
-file(GLOB_RECURSE CORE_SOURCES 
-    "${PROJECT_SOURCE_DIR}/scr/core/*.cpp"
+# ----------------------------
+# Dear ImGui
+# ----------------------------
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG        v1.90.4
 )
 
-file(GLOB_RECURSE CORE_HEADERS
-    "${PROJECT_SOURCE_DIR}/include/core/*.hpp"
+# ----------------------------
+# nlohmann/json
+# ----------------------------
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG        v3.11.3
 )
 
-# Create core library
-add_library(dice_core STATIC
-    ${CORE_SOURCES}
-    ${CORE_HEADERS}
-    ${IMGUI_SOURCES}
+# ----------------------------
+# sol2
+# ----------------------------
+FetchContent_Declare(
+  sol2
+  GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+  GIT_TAG        v3.3.0
 )
 
-target_link_libraries(dice_core
-    sfml-system
-    sfml-window
+# ----------------------------
+# spdlog
+# ----------------------------
+set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_TESTS   OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_BENCH   OFF CACHE BOOL "" FORCE)
+set(SPDLOG_FMT_EXTERNAL  OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG        v1.14.1
+)
+
+# ----------------------------
+# GoogleTest
+# ----------------------------
+set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.14.0
+)
+
+FetchContent_MakeAvailable(SFML imgui nlohmann_json sol2 spdlog googletest)
+
+# ----------------------------
+# Dear ImGui target
+# ----------------------------
+add_library(imgui_lib STATIC
+  ${imgui_SOURCE_DIR}/imgui.cpp
+  ${imgui_SOURCE_DIR}/imgui_draw.cpp
+  ${imgui_SOURCE_DIR}/imgui_tables.cpp
+  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+target_include_directories(imgui_lib PUBLIC ${imgui_SOURCE_DIR})
+target_compile_features(imgui_lib PUBLIC cxx_std_20)
+
+# ----------------------------
+# Application
+# ----------------------------
+add_executable(${PROJECT_NAME}
+  src/main.cpp
+)
+
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+find_package(Lua 5.3 REQUIRED)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
     sfml-graphics
     sfml-network
-    sfml-audio
-    ${LUA_LIBRARIES}
-    GL
-    dl
-    pthread
+    sfml-window
+    sfml-system
+
+    ${LUA_LIBRARY}
+    imgui_lib
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
 )
 
-# Main executable
-add_executable(dice
-    ${PROJECT_SOURCE_DIR}/scr/main.cpp
-)
-
-target_link_libraries(dice
-    dice_core
-)
-
-# Editor executable (if enabled)
-if(BUILD_EDITOR)
-    file(GLOB_RECURSE EDITOR_SOURCES
-        "${PROJECT_SOURCE_DIR}/scr/editor/*.cpp"
-    )
-
-    if(EDITOR_SOURCES)
-        add_executable(dice_editor ${EDITOR_SOURCES})
-        target_link_libraries(dice_editor dice_core)
-    else()
-        message(WARNING "BUILD_EDITOR=ON, but no editor sources found in scr/editor. Skipping dice_editor.")
-    endif()
+# in case of sol2 is not just header-only
+if(TARGET sol2::sol2)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sol2::sol2)
+else()
+  target_include_directories(${PROJECT_NAME} PRIVATE ${sol2_SOURCE_DIR}/include)
 endif()
 
+# ----------------------------
+# Application compile options
+# ----------------------------
 
-# Tests (if enabled)
-if(BUILD_TESTS)
-    enable_testing()
-    find_package(GTest REQUIRED)
-    include_directories(${GTEST_INCLUDE_DIRS})
-
-    file(GLOB_RECURSE TEST_SOURCES
-        "${PROJECT_SOURCE_DIR}/tests/*.cpp"
-    )
-
-    if(TEST_SOURCES)
-        add_executable(dice_tests ${TEST_SOURCES})
-        target_link_libraries(dice_tests
-            dice_core
-            GTest::GTest
-            GTest::Main
-            pthread
-        )
-        add_test(NAME dice_tests COMMAND dice_tests)
-    else()
-        message(WARNING "BUILD_TESTS=ON, but no test sources found in tests/. Skipping dice_tests.")
-    endif()
-endif()
-
-
-# Installation
-install(TARGETS dice DESTINATION bin)
-
-# Устанавливаем редактор только если цель реально существует
-if(TARGET dice_editor)
-    install(TARGETS dice_editor DESTINATION bin)
-endif()
-
-# Аналогично для тестов (обычно тесты вообще не ставят, но пусть будет безопасно)
-if(TARGET dice_tests)
-    install(TARGETS dice_tests DESTINATION bin)
-endif()
-
-
-# Copy assets to build directory
-file(COPY ${PROJECT_SOURCE_DIR}/asset DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${PROJECT_SOURCE_DIR}/scripts DESTINATION ${CMAKE_BINARY_DIR})
-
-# Print configuration
-message(STATUS "DICE Configuration:")
-message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "  Build tests: ${BUILD_TESTS}")
-message(STATUS "  Build editor: ${BUILD_EDITOR}")
-message(STATUS "  Enable network: ${ENABLE_NETWORK}")
-message(STATUS "  C++ standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "  SFML found: ${SFML_FOUND}")
-message(STATUS "  Lua found: ${LUA_FOUND}")
+#if (MSVC)
+#  target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive- /D_CRT_SECURE_NO_WARNINGS)
+#
+#elseif(UNIX)
+#  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
+#
+#  if(CMAKE_BUILD_TYPE STREQUAL "Asan")
+#    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined
+#            -fno-sanitize-recover=all -fsanitize=address)
+#    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined
+#            -fno-sanitize-recover=all -fsanitize=address)
+#
+#  elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#    target_compile_options(${PROJECT_NAME} PRIVATE -g)
+#  endif()
+#endif()
