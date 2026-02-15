@@ -4,8 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace dice {
-namespace core {
+namespace dice::core {
 
 GameObject::GameObject()
     : id_(""), name_("Unnamed"), type_("generic"), description_(""), zOrder_(0), parent_(nullptr),
@@ -240,5 +239,4 @@ void GameObject::fromJson(const nlohmann::json& json) {
     spdlog::debug("Loaded GameObject '{}' from JSON", id_);
 }
 
-} // namespace core
-} // namespace dice
+} // namespace dice::core

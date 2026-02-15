@@ -80,6 +80,7 @@ FetchContent_Declare(
   GIT_TAG        v1.14.0
 )
 
+set(FETCHCONTENT_QUIET OFF)
 FetchContent_MakeAvailable(SFML imgui nlohmann_json sol2 spdlog googletest)
 
 # ----------------------------
