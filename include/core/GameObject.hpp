@@ -9,8 +9,7 @@
 #include <SFML/Graphics.hpp>
 #include <nlohmann/json.hpp>
 
-namespace dice {
-namespace core {
+namespace dice::core {
 
 class GameObject : public sf::Drawable, public sf::Transformable {
 public:
@@ -232,7 +231,6 @@ protected:
     std::string luaScript_;
 };
 
-} // namespace core
-} // namespace dice
+} // namespace dice::core
 
 #endif // DICE_GAME_OBJECT_HPP

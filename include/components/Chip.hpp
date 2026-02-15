@@ -3,24 +3,30 @@
 
 #include "core/GameObject.hpp"
 
-namespace dice {
-namespace components {
+namespace dice::components {
 
 class Chip : public core::GameObject {
 public:
     Chip(const std::string& id, const std::string& name);
 
-    void setPlayer(int playerNum);
-    int getPlayer() const;
+    // ================= Player =================
+
+    void setPlayer(int player_num) {
+        player_num_ = player_num;
+    }
+    int getPlayer() const {
+        return player_num_;
+    }
+
+    // ========== Serialization ==========
 
     nlohmann::json toJson() const override;
     void fromJson(const nlohmann::json& json) override;
 
 private:
-    int playerNum_;
+    int player_num_;
 };
 
-} // namespace components
-} // namespace dice
+} // namespace dice::components
 
 #endif
