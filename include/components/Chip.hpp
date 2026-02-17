@@ -9,6 +9,24 @@ class Chip : public core::GameObject {
 public:
     Chip(const std::string& id, const std::string& name);
 
+    // ================= Visual / picking =================
+
+    void setAssetId(const std::string& asset_id) {
+        asset_id_ = asset_id;
+    }
+    const std::string& getAssetId() const {
+        return asset_id_;
+    }
+
+    void setRadius(float radius) {
+        radius_ = radius;
+    }
+    float getRadius() const {
+        return radius_;
+    }
+
+    bool hitTest(const sf::Vector2f& world_point) const;
+
     // ================= Player =================
 
     void setPlayer(int player_num) {
@@ -25,6 +43,9 @@ public:
 
 private:
     int player_num_;
+
+    std::string asset_id_;
+    float radius_;
 };
 
 } // namespace dice::components
