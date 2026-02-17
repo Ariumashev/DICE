@@ -100,6 +100,7 @@ target_compile_features(imgui_lib PUBLIC cxx_std_20)
 # ----------------------------
 add_library(dice_core STATIC
   src/core/GameObject.cpp
+  src/components/Chip.cpp
 )
 
 target_include_directories(dice_core
@@ -152,6 +153,7 @@ enable_testing()
 
 add_executable(dice_tests
   tests/core/test_GameObject.cpp
+  tests/components/test_Chip.cpp
 )
 
 target_link_libraries(dice_tests
