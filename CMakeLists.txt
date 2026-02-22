@@ -101,6 +101,7 @@ target_compile_features(imgui_lib PUBLIC cxx_std_20)
 add_library(dice_core STATIC
   src/core/GameObject.cpp
   src/components/Chip.cpp
+  src/components/Card.cpp
 )
 
 target_include_directories(dice_core
