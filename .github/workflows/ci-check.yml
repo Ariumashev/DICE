@@ -2,7 +2,7 @@ name: CI Checks
 
 on:
   pull_request:
-    # branches: [ main ]
+    branches: [ main ]
 
 jobs:
   checks:
@@ -10,44 +10,40 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
-
-      # -------------
-      # clang-format 
-      # -------------
-      - name: Check code format with clang-format
-        uses: doozyx/clang-format-lint@v0.18.2
+        uses: actions/checkout@v4
         with:
-          source: "./"
-          exclude: "third_party" 
-          clangFormatVersion: "15"
+          fetch-depth: 0
 
-      # -----------
-      # clang-tidy 
-      # -----------
       - name: Install clang tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-tidy clang-format
+          sudo apt-get install -y clang-tidy clang-format cmake
 
-      - name: Generate compile_commands.json
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          cp compile_commands.json ..
-
-      - name: Get list of changed C++ files
+      - name: Get changed files
         id: files
         run: |
           git fetch origin main
-          CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp|c|h)$' || true)
-          echo "changed_files=$CHANGED" >> $GITHUB_OUTPUT
+          FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp|c|h)$' || true)
+          echo "files=$FILES" >> $GITHUB_OUTPUT
 
-      - name: Run clang-tidy on changed files
-        if: steps.files.outputs.changed_files != ''
+      - name: Run clang-format
+        if: steps.files.outputs.files != ''
         run: |
-          echo "Running clang-tidy on changed files..."
-          for file in ${{ steps.files.outputs.changed_files }}; do
-            echo "Checking $file"
-            clang-tidy -p=./build -quiet "$file"
+          for file in ${{ steps.files.outputs.files }}; do
+            clang-format --dry-run --Werror "$file"
+          done
+
+      - name: Generate compile_commands.json
+        if: steps.files.outputs.files != ''
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cd ..
+
+      - name: Run clang-tidy
+        if: steps.files.outputs.files != ''
+        run: |
+          for file in ${{ steps.files.outputs.files }}; do
+            clang-tidy -p=./build "$file"
           done
