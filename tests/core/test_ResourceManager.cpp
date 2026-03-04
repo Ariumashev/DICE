@@ -5,9 +5,10 @@
 #include <gtest/gtest.h>
 
 struct MockResource {
-    bool loaded = false;
+    bool loaded = false; // NOLINT(misc-non-private-member-variables-in-classes)
 
-    bool loadFromFile(const std::string& filename) {
+    bool loadFromFile([[maybe_unused]] const std::string& filename)
+    {
         loaded = true;
         return true;
     }
@@ -41,7 +42,7 @@ TEST(ResourceManagerTest, ToJsonAndFromJson) {
     manager.load("res1", "file1.txt");
     manager.load("res2", "file2.txt");
 
-    nlohmann::json json = manager.toJson();
+    const nlohmann::json json = manager.toJson();
 
     dice::core::ResourceManager<MockResource> manager2;
     manager2.fromJson(json);
