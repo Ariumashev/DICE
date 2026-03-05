@@ -18,11 +18,6 @@ public:
     ResourceManager() = default;
     ~ResourceManager() = default;
 
-    int* ptr = nullptr;
-    void foo() {
-        *ptr = 42;
-    }
-
     ResourceManager(const ResourceManager&) = delete;
     ResourceManager& operator=(const ResourceManager&) = delete;
     ResourceManager(ResourceManager&&) = delete;
@@ -109,6 +104,12 @@ private:
     std::unordered_map<std::string, std::pair<std::string, std::shared_ptr<Resource>>> resources_{};
     std::shared_ptr<Resource> fallback_ = nullptr;
 };
+
+int* ptr = nullptr;
+void foo() {
+    *ptr = 42;
+}
+foo();
 
 } // namespace dice::core
 
