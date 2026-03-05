@@ -18,6 +18,7 @@ public:
     ResourceManager() = default;
     ~ResourceManager() = default;
 
+    int* ptr = nullptr;
     void foo() {
         *ptr = 42;
     }
