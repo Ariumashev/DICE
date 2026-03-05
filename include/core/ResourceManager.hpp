@@ -105,12 +105,6 @@ private:
     std::shared_ptr<Resource> fallback_ = nullptr;
 };
 
-int* ptr = nullptr;
-void foo() {
-    *ptr = 42;
-}
-foo();
-
 } // namespace dice::core
 
 #endif // DICE_RESOURCE_MANAGER_HPP
