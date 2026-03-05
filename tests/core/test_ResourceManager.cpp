@@ -9,7 +9,8 @@ struct MockResource {
 
     bool loadFromFile([[maybe_unused]] const std::string& filename) {
         loaded = true;
-        return true;}
+        return true;
+    }
 };
 
 TEST(ResourceManagerTest, LoadAndGetResource) {

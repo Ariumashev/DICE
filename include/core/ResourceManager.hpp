@@ -17,6 +17,7 @@ template <typename Resource> class ResourceManager {
 public:
     ResourceManager() = default;
     ~ResourceManager() = default;
+    int hello;
 
     ResourceManager(const ResourceManager&) = delete;
     ResourceManager& operator=(const ResourceManager&) = delete;
