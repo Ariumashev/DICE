@@ -13,12 +13,6 @@ struct MockResource {
     }
 };
 
-int* ptr = nullptr;
-void foo() {
-    *ptr = 42;
-}
-foo();
-
 TEST(ResourceManagerTest, LoadAndGetResource) {
     dice::core::ResourceManager<MockResource> manager;
 
