@@ -6,20 +6,15 @@
 
 namespace dice::core {
 
-static std::shared_ptr<GameObject>
-defaultFactory(const std::string&, const std::string& id, const std::string& name) {
-    return std::make_shared<GameObject>(id, name);
-}
-
-Model::Model(ObjectFactory factory) : factory_(std::move(factory)) {
+Model::Model(std::shared_ptr<IObjectFactory> factory) : factory_(std::move(factory)) {
     if (!factory_)
-        factory_ = defaultFactory;
+        factory_ = std::make_shared<GameObjectFactory>();
 }
 
-void Model::setFactory(ObjectFactory factory) {
+void Model::setFactory(std::shared_ptr<IObjectFactory> factory) {
     factory_ = std::move(factory);
     if (!factory_)
-        factory_ = defaultFactory;
+        factory_ = std::make_shared<GameObjectFactory>();
 }
 
 std::shared_ptr<GameObject> Model::getObject(const std::string& id) const {
@@ -33,14 +28,14 @@ void Model::clear() {
 }
 
 void Model::addRootObject(const std::shared_ptr<GameObject>& object) {
-    if (!object)
+    if (!object || objects_.count(object->getId()))
         return;
     roots_.push_back(object);
     registerRecursive(object);
 }
 
 bool Model::attachTo(const std::string& parentId, const std::shared_ptr<GameObject>& object) {
-    if (!object)
+    if (!object || objects_.count(object->getId()))
         return false;
 
     auto parent = getObject(parentId);
@@ -116,7 +111,7 @@ std::shared_ptr<GameObject> Model::makeFromJsonNode(const nlohmann::json& nodeJs
     const std::string id = nodeJson.value("id", "");
     const std::string name = nodeJson.value("name", "");
 
-    auto obj = factory_ ? factory_(type, id, name) : defaultFactory(type, id, name);
+    auto obj = factory_->create(type, id, name);
 
     obj->fromJson(nodeJson);
 

@@ -9,18 +9,16 @@
 #include <nlohmann/json.hpp>
 
 #include "core/GameObject.hpp"
+#include "core/IObjectFactory.hpp"
 
 namespace dice::core {
-
-using ObjectFactory = std::function<std::shared_ptr<GameObject>(
-    const std::string& type, const std::string& id, const std::string& name)>;
 
 class Model final {
 public:
     Model() = default;
-    explicit Model(ObjectFactory factory);
+    explicit Model(std::shared_ptr<IObjectFactory> factory);
 
-    void setFactory(ObjectFactory factory);
+    void setFactory(std::shared_ptr<IObjectFactory> factory);
 
     const std::vector<std::shared_ptr<GameObject>>& roots() const noexcept {
         return roots_;
@@ -42,7 +40,7 @@ public:
 private:
     std::vector<std::shared_ptr<GameObject>> roots_;
     std::unordered_map<std::string, std::shared_ptr<GameObject>> objects_;
-    ObjectFactory factory_;
+    std::shared_ptr<IObjectFactory> factory_;
 
 private:
     void registerRecursive(const std::shared_ptr<GameObject>& obj);
@@ -58,4 +56,3 @@ private:
 } // namespace dice::core
 
 #endif // DICE_MODEL_HPP
-
