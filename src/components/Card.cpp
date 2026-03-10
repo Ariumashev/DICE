@@ -44,7 +44,7 @@ void Card::setFaceUp(bool face_up) {
 
 // ================= Serialization =================
 
-nlohmann::json Card::toJson() const {
+nlohmann::json Card::toJson() const override {
     nlohmann::json json = GameObject::toJson();
 
     json["player"] = player_num_;
@@ -53,7 +53,7 @@ nlohmann::json Card::toJson() const {
     return json;
 }
 
-void Card::fromJson(const nlohmann::json& json) {
+void Card::fromJson(const nlohmann::json& json) override {
     GameObject::fromJson(json);
 
     if (json.contains("player")) {
