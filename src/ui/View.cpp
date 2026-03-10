@@ -1,7 +1,5 @@
 #include "ui/View.hpp"
 
-#include <iostream>
-
 namespace dice::view {
 
 View::View(sf::RenderWindow& window) : window_(window) {
@@ -19,7 +17,7 @@ void View::render(const std::vector<std::shared_ptr<core::GameObject>>& objects)
 
     drawObjects(objects);
 
-    drawHUD();
+    drawHUD(objects);
 }
 
 void View::update(float deltaTime) {
@@ -35,6 +33,44 @@ void View::update(float deltaTime) {
     }
 }
 
+void View::handleEvent(const sf::Event& event) {
+    if (event.type == sf::Event::Resized) {
+        sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+        window_.setView(sf::View(visibleArea));
+        spdlog::debug("Window resized to {}x{}", event.size.width, event.size.height);
+    }
+}
+
+// ========== Coordinate transformation ==========
+
+sf::Vector2f View::screenToWorld(const sf::Vector2i& screenPoint) const {
+    return window_.mapPixelToCoords(screenPoint);
+}
+
+sf::Vector2i View::worldToScreen(const sf::Vector2f& worldPoint) const {
+    return window_.mapCoordsToPixel(worldPoint);
+}
+
+// ========== Object search ==========
+
+std::shared_ptr<core::GameObject>
+View::pickObject(const sf::Vector2f& worldPos,
+                 const std::vector<std::shared_ptr<core::GameObject>>& objects) const {
+    sortedObjects_ = objects;
+    sortObjectsByZOrder(sortedObjects_);
+
+    for (auto it = sortedObjects_.rbegin(); it != sortedObjects_.rend(); ++it) {
+        auto& obj = *it;
+        if (obj && obj->isVisible() && obj->isActive()) {
+            if (obj->contains(worldPos)) {
+                return obj;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 // ========== Rendering ==========
 
 void View::clear() {
@@ -47,12 +83,10 @@ void View::drawObjects(const std::vector<std::shared_ptr<core::GameObject>>& obj
     }
 
     sortedObjects_ = objects;
-    std::sort(sortedObjects_.begin(), sortedObjects_.end(), [](const auto& a, const auto& b) {
-        return a->getZOrder() < b->getZOrder();
-    });
+    sortObjectsByZOrder(sortedObjects_);
 
     for (const auto& obj : sortedObjects_) {
-        if (obj && obj->isVisible()) {
+        if (obj->isVisible()) {
             drawObject(obj);
         }
     }
@@ -60,107 +94,101 @@ void View::drawObjects(const std::vector<std::shared_ptr<core::GameObject>>& obj
 
 void View::drawObject(std::shared_ptr<core::GameObject> obj) {
     window_.draw(*obj);
+    // TODO
+}
 
-    if (obj->getType() == "Card") {
-        auto card = std::dynamic_pointer_cast<components::Card>(obj);
-        if (card) {
-            drawCard(card);
+// ========== Interface rendering ==========
+
+void View::drawHUD(const std::vector<std::shared_ptr<core::GameObject>>& objects) {
+    sf::View currentView = window_.getView();
+    window_.setView(window_.getDefaultView());
+
+    if (config_.showFPS) {
+        drawFPS();
+    }
+
+    if (config_.showObjectCount) {
+        drawObjectCount(objects);
+    }
+
+    if (config_.showControls) {
+        drawControls();
+    }
+    window_.setView(currentView);
+}
+
+void View::drawFPS() {
+    std::stringstream ss;
+    ss << "FPS: " << static_cast<int>(fps_);
+
+    sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 10);
+    window_.draw(text);
+}
+
+void View::drawObjectCount(const std::vector<std::shared_ptr<core::GameObject>>& objects) {
+    size_t visibleCount = 0;
+    for (const auto& obj : objects) {
+        if (obj && obj->isVisible()) {
+            visibleCount++;
         }
-    } else if (obj->getType() == "Chip") {
-        auto chip = std::dynamic_pointer_cast<components::Chip>(obj);
-        if (chip) {
-            drawChip(chip);
+    }
+
+    std::stringstream ss;
+    ss << "Objects: " << visibleCount << "/" << objects.size();
+    sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 30);
+    window_.draw(text);
+}
+
+void View::drawControls() {
+    std::vector<std::string> controls = {"Controls:", "ESC - Exit"};
+
+    float startY = window_.getSize().y - 30.0f * controls.size();
+    float y = startY;
+
+    for (const auto& control : controls) {
+        sf::Text text = createText(control, 14, config_.textColor, 10, y);
+        window_.draw(text);
+        y += 20.0f;
+    }
+}
+
+// Support functions
+
+sf::Font& View::getFont() {
+    if (!fontLoaded_) {
+        if (font_.loadFromFile(config_.fontPath)) {
+            fontLoaded_ = true;
+            spdlog::debug("Loaded font from {}", config_.fontPath);
+        } else {
+            spdlog::warn("Failed to load font from {}, using default", config_.fontPath);
         }
     }
+    return font_;
 }
 
-void View::drawCard(std::shared_ptr<components::Card> card) {
-    sf::Vector2f pos = card->getPosition();
-    pos.y -= 40.f;
+sf::Text View::createText(
+    const std::string& str, unsigned int size, const sf::Color& color, float x, float y) const {
+    sf::Text text;
 
-    sf::CircleShape indicator(5.f);
-    indicator.setPosition(pos.x, pos.y);
-    indicator.setFillColor(card->isFaceUp() ? sf::Color::Green : sf::Color::Red);
-    window_.draw(indicator);
-
-    static sf::Font font;
-    static bool fontLoaded = false;
-
-    if (!fontLoaded) {
-        fontLoaded = font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+    if (fontLoaded_) {
+        text.setFont(font_);
     }
+    text.setString(str);
+    text.setCharacterSize(size);
+    text.setFillColor(color);
+    text.setPosition(x, y);
 
-    if (fontLoaded) {
-        sf::Text playerText;
-        playerText.setFont(font);
-        playerText.setString("Player: " + std::to_string(card->getPlayer()));
-        playerText.setCharacterSize(14);
-        playerText.setFillColor(sf::Color::White);
-        playerText.setPosition(pos.x - 30.f, pos.y - 50.f);
-        window_.draw(playerText);
-    }
+    return text;
 }
 
-void View::drawChip(std::shared_ptr<components::Chip> chip) {
-    sf::CircleShape outline(chip->getRadius());
-    outline.setPosition(chip->getPosition() - sf::Vector2f(chip->getRadius(), chip->getRadius()));
-    outline.setFillColor(sf::Color::Transparent);
-    outline.setOutlineColor(sf::Color::Cyan);
-    outline.setOutlineThickness(2.f);
+void View::sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects) const {
+    objects.erase(
+        std::remove_if(objects.begin(), objects.end(), [](const auto& ptr) { return !ptr; }),
+        objects.end());
 
-    window_.draw(outline);
-
-    static sf::Font font;
-    static bool fontLoaded = false;
-
-    if (!fontLoaded) {
-        fontLoaded = font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-    }
-
-    if (fontLoaded) {
-        sf::Text playerText;
-        playerText.setFont(font);
-        playerText.setString("Player: " + std::to_string(chip->getPlayer()));
-        playerText.setCharacterSize(14);
-        playerText.setFillColor(sf::Color::White);
-        playerText.setPosition(chip->getPosition().x - chip->getRadius(),
-                               chip->getPosition().y - 50.f);
-        window_.draw(playerText);
-    }
-}
-
-void View::drawHUD() {
-    if (!config_.showFPS)
-        return;
-
-    static sf::Font font;
-    static bool fontLoaded = false;
-
-    if (!fontLoaded) {
-        fontLoaded = font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-    }
-
-    if (fontLoaded) {
-        sf::Text fpsText;
-        fpsText.setFont(font);
-        fpsText.setString("FPS: " + std::to_string(static_cast<int>(fps_)));
-        fpsText.setCharacterSize(16);
-        fpsText.setFillColor(sf::Color::White);
-        fpsText.setPosition(10, 10);
-
-        window_.draw(fpsText);
-
-        sf::Text countText;
-        countText.setFont(font);
-        countText.setString("Objects: " + std::to_string(sortedObjects_.size()));
-        countText.setCharacterSize(16);
-        countText.setFillColor(sf::Color::White);
-        countText.setPosition(10, 30);
-
-        window_.draw(countText);
-    } else {
-        spdlog::warn("Font not loaded, HUD text not displayed");
-    }
+    std::stable_sort(objects.begin(), objects.end(), [](const auto& a, const auto& b) {
+        return a->getZOrder() < b->getZOrder();
+    });
 }
 
 } // namespace dice::view
