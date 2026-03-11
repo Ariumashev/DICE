@@ -4,22 +4,33 @@ on:
   push:
     branches:
       - main
-      - features/workflow
+      - features/*
   pull_request:
     branches:
       - main
-      - features/workflow
+      - features/*
   workflow_dispatch:
 
 jobs:
   clang-checks:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tool: [clang-format, clang-tidy]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/compile_commands.json
+            ~/.cache/clang-tidy
+          key: ${{ runner.os }}-clang-cache-${{ github.sha }}
 
       - name: Install dependencies
         run: |
@@ -50,25 +61,25 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja
 
-      - name: Build project
-        run: |
-          cmake --build build
-
       - name: Get changed C/C++ files
         id: changed_files
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only origin/${{ github.base_ref }}...HEAD \
-              | grep -E '\.(cpp|cc|cxx|hpp|h)$' > changed_files.txt || true
+            BASE=${{ github.event.pull_request.base.sha }}
           else
-            git diff --name-only HEAD~1 \
-              | grep -E '\.(cpp|cc|cxx|hpp|h)$' > changed_files.txt || true
+            BASE=$(git rev-parse HEAD~1)
           fi
+
+          git diff --name-only $BASE HEAD \
+            | grep -E '\.(cpp|cc|cxx|hpp|h)$' \
+            | grep -v '^third-party/' > changed_files.txt || true
 
           echo "Changed files:"
           cat changed_files.txt || true
+          echo "CHANGED_FILES=$(cat changed_files.txt)" >> $GITHUB_ENV
 
       - name: Run clang-format
+        if: matrix.tool == 'clang-format'
         run: |
           if [ -s changed_files.txt ]; then
             while read file; do
@@ -80,18 +91,25 @@ jobs:
           fi
 
       - name: Download clang-tidy-diff
+        if: matrix.tool == 'clang-tidy'
         run: |
           wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
 
       - name: Run clang-tidy
+        if: matrix.tool == 'clang-tidy'
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff -U0 origin/${{ github.base_ref }}...HEAD > diff.txt
-          else
-            git diff -U0 HEAD~1 > diff.txt
-          fi
+          if [ -s changed_files.txt ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE=${{ github.event.pull_request.base.sha }}
+            else
+              BASE=$(git rev-parse HEAD~1)
+            fi
 
-          python3 clang-tidy-diff.py \
-            -p1 \
-            -path build \
-            -header-filter='^(src|include)/' < diff.txt
+            git diff -U0 $BASE HEAD \
+              | python3 clang-tidy-diff.py \
+                  -p1 \
+                  -path build \
+                  -regex '^(src|include)/.*\.(cpp|cc|cxx|hpp|h)$' \
+                  -quiet
+          else
+            echo "No C/C++ files changed"
