@@ -156,6 +156,7 @@ enable_testing()
 add_executable(dice_tests
   tests/core/test_GameObject.cpp
   tests/components/test_Chip.cpp
+  tests/ui/test_View.cpp
 )
 
 target_link_libraries(dice_tests
