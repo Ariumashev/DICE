@@ -14,23 +14,12 @@ on:
 jobs:
   clang-checks:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        tool: [clang-format, clang-tidy]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Setup Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            build/compile_commands.json
-            ~/.cache/clang-tidy
-          key: ${{ runner.os }}-clang-cache-${{ github.sha }}
 
       - name: Install dependencies
         run: |
@@ -76,27 +65,22 @@ jobs:
 
           echo "Changed files:"
           cat changed_files.txt || true
-          echo "CHANGED_FILES=$(cat changed_files.txt)" >> $GITHUB_ENV
 
-      - name: Run clang-format
-        if: matrix.tool == 'clang-format'
+      - name: Run clang-format and clang-tidy
         run: |
+          # ==== clang-format ====
           if [ -s changed_files.txt ]; then
             while read file; do
               echo "Checking format: $file"
               clang-format --style=file "$file" | diff -u "$file" - || exit 1
             done < changed_files.txt
           else
-            echo "No C/C++ files changed"
+            echo "No C/C++ files changed for clang-format"
+          fi
 
-      - name: Download clang-tidy-diff
-        if: matrix.tool == 'clang-tidy'
-        run: |
-          wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
+          # ==== clang-tidy ====
+          wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
 
-      - name: Run clang-tidy
-        if: matrix.tool == 'clang-tidy'
-        run: |
           if [ -s changed_files.txt ]; then
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               BASE=${{ github.event.pull_request.base.sha }}
@@ -111,4 +95,5 @@ jobs:
               -header-filter='^(src|include)/' \
               < diff.txt
           else
-            echo "No C/C++ files changed"
+            echo "No C/C++ files changed for clang-tidy"
+          fi
