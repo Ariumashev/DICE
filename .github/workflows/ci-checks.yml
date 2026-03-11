@@ -3,9 +3,11 @@ name: CI Checks
 on:
   pull_request:
     # branches: [ main ]
+  push:
+    # branches: [ main ]
 
 jobs:
-  checks:
+  clang-checks:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,36 +16,51 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install clang tools
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-tidy clang-format cmake
+          sudo apt-get install -y \
+            clang \
+            clang-format \
+            clang-tidy \
+            cmake \
+            ninja-build \
+            python3
+
+      - name: Configure project (generate compile_commands.json)
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -G Ninja
+
+      - name: Build project
+        run: |
+          cmake --build build
 
       - name: Get changed files
-        id: files
+        id: changed
         run: |
-          git fetch origin main
-          FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp|c|h)$' || true)
-          echo "files=$FILES" >> $GITHUB_OUTPUT
+          git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '\.(cpp|cc|cxx|hpp|h)$' > changed_files.txt || true
 
-      - name: Run clang-format
-        if: steps.files.outputs.files != ''
-        run: |
-          for file in ${{ steps.files.outputs.files }}; do
-            clang-format --dry-run --Werror "$file"
-          done
+          cat changed_files.txt
 
-      - name: Generate compile_commands.json
-        if: steps.files.outputs.files != ''
+      - name: Run clang-format check
         run: |
-          mkdir -p build
-          cd build
-          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          cd ..
+          if [ -s changed_files.txt ]; then
+            while read file; do
+              clang-format --style=file "$file" | diff -u "$file" - || exit 1
+            done < changed_files.txt
+          else
+            echo "No C/C++ files changed"
+          fi
 
-      - name: Run clang-tidy
-        if: steps.files.outputs.files != ''
+      - name: Run clang-tidy on changed lines
         run: |
-          for file in ${{ steps.files.outputs.files }}; do
-            clang-tidy -p=./build "$file"
-          done
+          wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
+
+          git diff -U0 origin/${{ github.base_ref }}...HEAD \
+            | python3 clang-tidy-diff.py \
+              -p1 \
+              -path build \
+              -extra-arg=-std=c++20
