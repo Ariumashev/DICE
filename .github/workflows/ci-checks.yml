@@ -76,17 +76,18 @@ jobs:
         run: |
           wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
 
+          # Определяем BASE для diff
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE=${{ github.event.pull_request.base.sha }}
           else
-            # Если это первый коммит в ветке, HEAD~1 может не существовать
             if git rev-parse HEAD~1 >/dev/null 2>&1; then
               BASE=$(git rev-parse HEAD~1)
             else
               BASE=$(git rev-parse HEAD)
             fi
           fi
-          
+
+          # Проверяем изменённые файлы
           if [ -s changed_files.txt ]; then
             git diff -U0 "$BASE" HEAD > diff.txt
 
