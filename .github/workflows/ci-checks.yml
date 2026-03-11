@@ -70,7 +70,7 @@ jobs:
           echo "Changed files:"
           cat changed_files.txt || true
 
-      # --- Run clang-format and clang-tidy in one step ---
+      # --- Run clang-format and clang-tidy ---
       - name: Run clang-format and clang-tidy
         run: |
           # ==== clang-format ====
