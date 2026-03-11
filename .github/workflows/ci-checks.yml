@@ -72,10 +72,11 @@ jobs:
 
       # --- Run clang-format and clang-tidy ---
       - name: Run clang-format and clang-tidy
+        shell: bash
         run: |
           # ==== clang-format ====
           if [ -s changed_files.txt ]; then
-            while read file; do
+            while IFS= read -r file; do
               echo "Checking format: $file"
               clang-format --style=file "$file" | diff -u "$file" - || exit 1
             done < changed_files.txt
@@ -93,7 +94,7 @@ jobs:
               BASE=$(git rev-parse HEAD~1)
             fi
 
-            git diff -U0 $BASE HEAD > diff.txt
+            git diff -U0 "$BASE" HEAD > diff.txt
 
             if [ -s diff.txt ]; then
               python3 clang-tidy-diff.py \
@@ -105,3 +106,4 @@ jobs:
             fi
           else
             echo "No C/C++ files changed for clang-tidy"
+          fi
