@@ -116,14 +116,24 @@ jobs:
               continue
             fi
             echo "Checking: $file"
-            if ! clang-tidy "$file" \
-                -p build \
-                --quiet \
-                --warnings-as-errors='*'; then
-              echo "❌ clang-tidy failed on $file"
-              FAILED=1
+
+            ABS_FILE="$(realpath "$file")"
+            if grep -q "\"file\": \"$ABS_FILE\"" build/compile_commands.json 2>/dev/null; then
+              if ! clang-tidy "$file" -p build --quiet --warnings-as-errors='*'; then
+                echo "❌ clang-tidy failed on $file"
+                FAILED=1
+              else
+                echo "✅ $file passed clang-tidy"
+              fi
             else
-              echo "✅ $file passed clang-tidy"
+              echo "ℹ️  $file not in compile_commands.json, using manual flags"
+              if ! clang-tidy "$file" --quiet --warnings-as-errors='*' \
+                  -- -std=c++20 -I include; then
+                echo "❌ clang-tidy failed on $file"
+                FAILED=1
+              else
+                echo "✅ $file passed clang-tidy"
+              fi
             fi
           done < changed_files.txt
 
