@@ -91,7 +91,7 @@ jobs:
             git diff -U0 HEAD~1 > diff.txt
           fi
 
-          cat diff.txt | python3 clang-tidy-diff.py \
+          python3 clang-tidy-diff.py \
             -p1 \
             -path build \
-            -header-filter='^src/|^include/' < diff.txt
+            -header-filter='^(src|include)/' < diff.txt
