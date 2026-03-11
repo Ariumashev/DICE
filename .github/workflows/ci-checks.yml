@@ -69,32 +69,54 @@ jobs:
           echo "Changed files:"
           cat changed_files.txt || true
 
+      # --- Run clang-format and clang-tidy ---
       - name: Run clang-format
         run: |
           if [ -s changed_files.txt ]; then
-            while read file; do
-              echo "Checking format: $file"
-              clang-format --style=file "$file" | diff -u "$file" - || exit 1
-            done < changed_files.txt
+            echo "Checking formatting for changed files:"
+            for file in $(cat changed_files.txt); do
+              if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
+                echo "❌ $file has incorrect formatting"
+                clang-format "$file" | git diff --no-index --color "$file" - || true
+                exit 1
+              else
+                echo "✅ $file is properly formatted"
+              fi
+            done
+            echo "✅ All files are properly formatted"
           else
-            echo "No C/C++ files changed for clang-format"
+            echo "No C/C++ files to check for formatting"
+          fi
 
-      - name: Run clang-tidy
+      - name: Download clang-tidy-diff script
         run: |
           wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
+          chmod +x clang-tidy-diff.py
 
+      - name: Run clang-tidy on changed files
+        run: |
           if [ -s changed_files.txt ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE=${{ github.event.pull_request.base.sha }}
+            else
+              BASE=$(git rev-parse HEAD~1)
+            fi
+
             git diff -U0 $BASE HEAD > diff.txt
 
             if [ -s diff.txt ]; then
+              echo "Running clang-tidy on changed lines:"
               python3 clang-tidy-diff.py \
                 -p1 \
                 -path build \
                 -only-check-in-db \
-                -header-filter='^(src|include)/' \
+                -header-filter='.*\.(hpp|h)$' \
+                -extra-arg=-std=c++17 \
+                -quiet \
                 < diff.txt
             else
-              echo "No relevant changes for clang-tidy"
+              echo "No changes in C/C++ files for clang-tidy"
             fi
           else
             echo "No C/C++ files changed for clang-tidy"
+          fi
