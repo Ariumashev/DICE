@@ -16,7 +16,8 @@ int main() {
     int x = 0;
 
     if (x == 0) {
-        std::cout << "hello" << std::endl;}
+        std::cout << "hello" << std::endl;
+    }
 
     int result = add(1, 2);
 
