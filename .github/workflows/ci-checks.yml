@@ -88,13 +88,11 @@ jobs:
             echo "No C/C++ files to check for formatting"
           fi
 
-      - name: Download clang-tidy-diff script
+      - name: Run clang-tidy on changed files
         run: |
           wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
           chmod +x clang-tidy-diff.py
 
-      - name: Run clang-tidy on changed files
-        run: |
           if [ -s changed_files.txt ]; then
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               BASE=${{ github.event.pull_request.base.sha }}
@@ -105,12 +103,11 @@ jobs:
             git diff -U0 $BASE HEAD > diff.txt
 
             if [ -s diff.txt ]; then
-              echo "Running clang-tidy on changed lines:"
               python3 clang-tidy-diff.py \
                 -p1 \
                 -path build \
+                -extra-arg=-std=c++20 \
                 -quiet \
-                -use-color \
                 < diff.txt
             else
               echo "No changes in C/C++ files for clang-tidy"
