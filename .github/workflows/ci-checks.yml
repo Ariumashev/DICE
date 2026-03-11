@@ -16,13 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # --- Checkout code ---
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- Install dependencies ---
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -46,37 +44,13 @@ jobs:
             libflac-dev \
             liblua5.3-dev
 
-      # --- Configure project ---
       - name: Configure project
         run: |
-          cmake -S . -B build \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-            -G Ninja
+          cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja
 
-      # --- Get changed C/C++ files ---
       - name: Get changed C/C++ files
         id: changed_files
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE=${{ github.event.pull_request.base.sha }}
-          else
-            BASE=$(git rev-parse HEAD~1)
-          fi
-
-          git diff --name-only $BASE HEAD \
-            | grep -E '\.(cpp|cc|cxx|hpp|h)$' \
-            | grep -v '^third-party/' > changed_files.txt || true
-
-          echo "Changed files:"
-          cat changed_files.txt || true
-
-      # --- Run clang-format and clang-tidy ---
-      - name: Run clang-tidy
-        shell: bash
-        run: |
-          wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
-
-          # Определяем BASE для diff
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE=${{ github.event.pull_request.base.sha }}
           else
@@ -87,9 +61,30 @@ jobs:
             fi
           fi
 
-          # Проверяем изменённые файлы
+          git diff --name-only $BASE HEAD \
+            | grep -E '\.(cpp|cc|cxx|hpp|h)$' \
+            | grep -v '^third-party/' > changed_files.txt || true
+
+          echo "CHANGED_FILES=$(cat changed_files.txt)" >> $GITHUB_ENV
+          echo "Changed files:"
+          cat changed_files.txt || true
+
+      - name: Run clang-format
+        run: |
           if [ -s changed_files.txt ]; then
-            git diff -U0 "$BASE" HEAD > diff.txt
+            while read file; do
+              echo "Checking format: $file"
+              clang-format --style=file "$file" | diff -u "$file" - || exit 1
+            done < changed_files.txt
+          else
+            echo "No C/C++ files changed for clang-format"
+
+      - name: Run clang-tidy
+        run: |
+          wget -q https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py
+
+          if [ -s changed_files.txt ]; then
+            git diff -U0 $BASE HEAD > diff.txt
 
             if [ -s diff.txt ]; then
               python3 clang-tidy-diff.py \
@@ -99,8 +94,7 @@ jobs:
                 -header-filter='^(src|include)/' \
                 < diff.txt
             else
-              echo "No changes in C/C++ files for clang-tidy"
+              echo "No relevant changes for clang-tidy"
             fi
           else
             echo "No C/C++ files changed for clang-tidy"
-          fi
