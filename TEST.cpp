@@ -3,8 +3,6 @@
 
 
 int main() {
-
-    int x = 10;
+    const int x = 10;
     std::cout << x << std::endl;
-
 }
