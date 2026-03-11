@@ -103,6 +103,8 @@ add_library(dice_core STATIC
   src/components/Chip.cpp
   src/components/Card.cpp
   src/ui/View.cpp
+  src/core/Model.cpp
+  src/components/Card.cpp
 )
 
 target_include_directories(dice_core
@@ -157,6 +159,8 @@ add_executable(dice_tests
   tests/core/test_GameObject.cpp
   tests/components/test_Chip.cpp
   tests/ui/test_View.cpp
+  tests/core/test_Model.cpp
+  tests/core/test_ResourceManager.cpp
 )
 
 target_link_libraries(dice_tests
