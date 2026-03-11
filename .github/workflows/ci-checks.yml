@@ -109,10 +109,9 @@ jobs:
               python3 clang-tidy-diff.py \
                 -p1 \
                 -path build \
-                -only-check-in-db \
-                -header-filter='.*\.(hpp|h)$' \
-                -extra-arg=-std=c++17 \
                 -quiet \
+                -use-color \
+                -extra-arg=-std=c++17 \
                 < diff.txt
             else
               echo "No changes in C/C++ files for clang-tidy"
