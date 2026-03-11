@@ -2,9 +2,12 @@ name: CI Checks
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - features/workflow
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
