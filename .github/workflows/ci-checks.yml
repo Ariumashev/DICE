@@ -14,7 +14,6 @@ on:
 jobs:
   clang-checks:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,7 +45,11 @@ jobs:
 
       - name: Configure project
         run: |
-          cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja
+          cmake -S . -B build \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -G Ninja
 
       - name: Get changed C/C++ files
         id: changed_files
@@ -61,39 +64,71 @@ jobs:
             fi
           fi
 
-          git diff --name-only $BASE HEAD \
+          git diff --name-only "$BASE" HEAD \
             | grep -E '\.(cpp|cc|cxx|hpp|h)$' \
-            | grep -v '^third-party/' > changed_files.txt || true
+            | grep -v '^third-party/' \
+            | grep -v '^build/' > changed_files.txt || true
 
-          echo "CHANGED_FILES=$(cat changed_files.txt)" >> $GITHUB_ENV
           echo "Changed files:"
-          cat changed_files.txt || true
+          cat changed_files.txt || echo "(none)"
 
-      # --- Run clang-format and clang-tidy ---
       - name: Run clang-format
         run: |
-          if [ -s changed_files.txt ]; then
-            echo "Checking formatting for changed files:"
-            for file in $(cat changed_files.txt); do
-              if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
-                echo "❌ $file has incorrect formatting"
-                clang-format "$file" | git diff --no-index --color "$file" - || true
-                exit 1
-              else
-                echo "✅ $file is properly formatted"
-              fi
-            done
-            echo "✅ All files are properly formatted"
-          else
+          if [ ! -s changed_files.txt ]; then
             echo "No C/C++ files to check for formatting"
+            exit 0
           fi
+
+          FAILED=0
+          while IFS= read -r file; do
+            if [ ! -f "$file" ]; then
+              echo "⚠️  Skipping deleted file: $file"
+              continue
+            fi
+            if ! clang-format --dry-run --Werror "$file"; then
+              echo "❌ $file has incorrect formatting"
+              echo "--- Expected formatting diff ---"
+              diff <(clang-format "$file") "$file" || true
+              FAILED=1
+            else
+              echo "✅ $file is properly formatted"
+            fi
+          done < changed_files.txt
+
+          if [ "$FAILED" -ne 0 ]; then
+            echo ""
+            echo "Fix formatting by running: clang-format -i <file>"
+            exit 1
+          fi
+          echo "✅ All files are properly formatted"
 
       - name: Run clang-tidy
         run: |
-          if [ -s changed_files.txt ]; then
-            echo "Running clang-tidy on changed files..."
-            while IFS= read -r file; do
-              clang-tidy "$file" -p build -quiet -extra-arg=-std=c++20 || exit 1
-            done < changed_files.txt
-          else
+          if [ ! -s changed_files.txt ]; then
             echo "No C/C++ files changed for clang-tidy"
+            exit 0
+          fi
+
+          FAILED=0
+          while IFS= read -r file; do
+            if [ ! -f "$file" ]; then
+              echo "⚠️  Skipping deleted file: $file"
+              continue
+            fi
+            echo "Checking: $file"
+            if ! clang-tidy "$file" \
+                -p build \
+                --quiet \
+                --warnings-as-errors='*' \
+                --extra-arg=-std=c++20; then
+              echo "❌ clang-tidy failed on $file"
+              FAILED=1
+            else
+              echo "✅ $file passed clang-tidy"
+            fi
+          done < changed_files.txt
+
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
+          echo "✅ All files passed clang-tidy"
