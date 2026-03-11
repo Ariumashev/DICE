@@ -37,7 +37,8 @@ jobs:
             libfreetype6-dev \
             libopenal-dev \
             libvorbis-dev \
-            libflac-dev
+            libflac-dev \
+            liblua5.3-dev
 
       - name: Configure project (generate compile_commands.json)
         run: |
