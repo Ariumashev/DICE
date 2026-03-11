@@ -26,6 +26,18 @@ jobs:
             cmake \
             ninja-build \
             python3
+          sudo apt-get install -y \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libgl1-mesa-dev \
+            libudev-dev \
+            libfreetype6-dev \
+            libopenal-dev \
+            libvorbis-dev \
+            libflac-dev
 
       - name: Configure project (generate compile_commands.json)
         run: |
