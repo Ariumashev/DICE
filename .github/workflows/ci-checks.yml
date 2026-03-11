@@ -119,8 +119,7 @@ jobs:
             if ! clang-tidy "$file" \
                 -p build \
                 --quiet \
-                --warnings-as-errors='*' \
-                --extra-arg=-std=c++20; then
+                --warnings-as-errors='*'; then
               echo "❌ clang-tidy failed on $file"
               FAILED=1
             else
