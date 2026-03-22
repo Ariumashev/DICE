@@ -1,4 +1,5 @@
 #include "ui/View.hpp"
+#include <ranges>
 
 namespace dice::view {
 
@@ -20,49 +21,51 @@ void View::render(const std::vector<std::shared_ptr<core::GameObject>>& objects)
     drawHUD(objects);
 }
 
-void View::update(float deltaTime) {
+void View::update(float delta_time) {
     frameCount_++;
-    fpsTimer_ += deltaTime;
+    fpsTimer_ += delta_time;
 
-    if (fpsTimer_ >= 1.0f) {
-        fps_ = frameCount_ / fpsTimer_;
+    if (fpsTimer_ >= 1.0F) {
+        fps_ = static_cast<float>(frameCount_) / fpsTimer_;
         frameCount_ = 0;
-        fpsTimer_ = 0.0f;
+        fpsTimer_ = 0.0F;
 
-        spdlog::debug("FPS: {:.1f}", fps_);
+        spdlog::debug("FPS: {:.1F}", fps_);
     }
 }
 
 void View::handleEvent(const sf::Event& event) {
     if (event.type == sf::Event::Resized) {
-        sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+        unsigned int width = event.size.width;
+        unsigned int height = event.size.height;
+        const sf::FloatRect visibleArea(0.F, 0.F, static_cast<float>(width), static_cast<float>(height));
         window_.setView(sf::View(visibleArea));
-        spdlog::debug("Window resized to {}x{}", event.size.width, event.size.height);
+        spdlog::debug("Window resized to {}x{}", width, height);
     }
 }
 
 // ========== Coordinate transformation ==========
 
-sf::Vector2f View::screenToWorld(const sf::Vector2i& screenPoint) const {
-    return window_.mapPixelToCoords(screenPoint);
+sf::Vector2f View::screenToWorld(const sf::Vector2i& screen_point) const {
+    return window_.mapPixelToCoords(screen_point);
 }
 
-sf::Vector2i View::worldToScreen(const sf::Vector2f& worldPoint) const {
-    return window_.mapCoordsToPixel(worldPoint);
+sf::Vector2i View::worldToScreen(const sf::Vector2f& world_point) const {
+    return window_.mapCoordsToPixel(world_point);
 }
 
 // ========== Object search ==========
 
 std::shared_ptr<core::GameObject>
-View::pickObject(const sf::Vector2f& worldPos,
+View::pickObject(const sf::Vector2f& world_pos,
                  const std::vector<std::shared_ptr<core::GameObject>>& objects) const {
     sortedObjects_ = objects;
     sortObjectsByZOrder(sortedObjects_);
-
+    // NOLINTNEXTLINE(modernize-loop-convert)
     for (auto it = sortedObjects_.rbegin(); it != sortedObjects_.rend(); ++it) {
         auto& obj = *it;
         if (obj && obj->isVisible() && obj->isActive()) {
-            if (obj->contains(worldPos)) {
+            if (obj->contains(world_pos)) {
                 return obj;
             }
         }
@@ -92,7 +95,7 @@ void View::drawObjects(const std::vector<std::shared_ptr<core::GameObject>>& obj
     }
 }
 
-void View::drawObject(std::shared_ptr<core::GameObject> obj) {
+void View::drawObject(const std::shared_ptr<core::GameObject>& obj) {
     window_.draw(*obj);
     // TODO
 }
@@ -100,7 +103,7 @@ void View::drawObject(std::shared_ptr<core::GameObject> obj) {
 // ========== Interface rendering ==========
 
 void View::drawHUD(const std::vector<std::shared_ptr<core::GameObject>>& objects) {
-    sf::View currentView = window_.getView();
+    const sf::View currentView = window_.getView();
     window_.setView(window_.getDefaultView());
 
     if (config_.showFPS) {
@@ -121,7 +124,7 @@ void View::drawFPS() {
     std::stringstream ss;
     ss << "FPS: " << static_cast<int>(fps_);
 
-    sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 10);
+    const sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 10);
     window_.draw(text);
 }
 
@@ -135,20 +138,20 @@ void View::drawObjectCount(const std::vector<std::shared_ptr<core::GameObject>>&
 
     std::stringstream ss;
     ss << "Objects: " << visibleCount << "/" << objects.size();
-    sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 30);
+    const sf::Text text = createText(ss.str(), 16, config_.textColor, 10, 30);
     window_.draw(text);
 }
 
 void View::drawControls() {
-    std::vector<std::string> controls = {"Controls:", "ESC - Exit"};
+    const std::vector<std::string> controls = {"Controls:", "ESC - Exit"};
 
-    float startY = window_.getSize().y - 30.0f * controls.size();
+    const float startY = static_cast<float>(window_.getSize().y) - 30.0F * static_cast<float>(controls.size());
     float y = startY;
 
     for (const auto& control : controls) {
-        sf::Text text = createText(control, 14, config_.textColor, 10, y);
+        const sf::Text text = createText(control, 14, config_.textColor, 10, y);
         window_.draw(text);
-        y += 20.0f;
+        y += 20.0F;
     }
 }
 
@@ -181,7 +184,7 @@ sf::Text View::createText(
     return text;
 }
 
-void View::sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects) const {
+void View::sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects) {
     objects.erase(
         std::remove_if(objects.begin(), objects.end(), [](const auto& ptr) { return !ptr; }),
         objects.end());

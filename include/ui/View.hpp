@@ -32,6 +32,8 @@ public:
 
     View(const View&) = delete;
     View& operator=(const View&) = delete;
+    View(View&&) = delete;
+    View& operator=(View&&) = delete;
 
     ~View() = default;
 
@@ -39,7 +41,7 @@ public:
 
     void render(const std::vector<std::shared_ptr<core::GameObject>>& objects);
 
-    void update(float deltaTime);
+    void update(float delta_time);
 
     void handleEvent(const sf::Event& event);
 
@@ -54,13 +56,13 @@ public:
 
     // ========== Coordinate transformation ==========
 
-    sf::Vector2f screenToWorld(const sf::Vector2i& screenPoint) const;
-    sf::Vector2i worldToScreen(const sf::Vector2f& worldPoint) const;
+    sf::Vector2f screenToWorld(const sf::Vector2i& screen_point) const;
+    sf::Vector2i worldToScreen(const sf::Vector2f& world_point) const;
 
     // ========== Object search ==========
 
     std::shared_ptr<core::GameObject>
-    pickObject(const sf::Vector2f& worldPos,
+    pickObject(const sf::Vector2f& world_pos,
                const std::vector<std::shared_ptr<core::GameObject>>& objects) const;
 
 private:
@@ -70,7 +72,7 @@ private:
 
     void drawObjects(const std::vector<std::shared_ptr<core::GameObject>>& objects);
 
-    void drawObject(std::shared_ptr<core::GameObject> obj);
+    void drawObject(const std::shared_ptr<core::GameObject>& obj);
 
     void drawHUD(const std::vector<std::shared_ptr<core::GameObject>>& objects);
 
@@ -83,16 +85,16 @@ private:
     sf::Font& getFont();
     sf::Text createText(
         const std::string& str, unsigned int size, const sf::Color& color, float x, float y) const;
-    void sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects) const;
+    static void sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects);
 
     // ========== Condition ==========
 
     sf::RenderWindow& window_;
     ViewConfig config_;
 
-    float fps_ = 0.0f;
+    float fps_ = 0.0F;
     int frameCount_ = 0;
-    float fpsTimer_ = 0.0f;
+    float fpsTimer_ = 0.0F;
 
     mutable sf::Font font_;
     mutable bool fontLoaded_ = false;

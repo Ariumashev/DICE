@@ -9,9 +9,11 @@
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 
-using namespace dice::view;
-using namespace dice::core;
-using namespace dice::components;
+using dice::view::View;
+using dice::view::ViewConfig;
+using dice::core::GameObject;
+using dice::components::Chip;
+using dice::components::Card;
 
 // ========== Fixture ==========
 
@@ -56,11 +58,11 @@ protected:
     }
 
     std::shared_ptr<GameObject> createTestObject(
-        const std::string& id, const std::string& name, float x, float y, int zOrder = 0) {
+        const std::string& id, const std::string& name, float x, float y, int z_order = 0) {
         auto obj = std::make_shared<GameObject>(id, name);
         obj->setTexture(&testTexture);
         obj->setPosition(x, y);
-        obj->setZOrder(zOrder);
+        obj->setZOrder(z_order);
         return obj;
     }
 
@@ -85,34 +87,34 @@ TEST_F(ViewTest, ConstructorInitializesCorrectly) {
 // ========== Update tests ==========
 
 TEST_F(ViewTest, UpdateDoesNotCrash) {
-    EXPECT_NO_THROW(view->update(0.016f));
-    EXPECT_NO_THROW(view->update(0.033f));
-    EXPECT_NO_THROW(view->update(0.0f));
+    EXPECT_NO_THROW(view->update(0.016F));
+    EXPECT_NO_THROW(view->update(0.033F));
+    EXPECT_NO_THROW(view->update(0.0F));
 }
 
 // ========== Coordinate transformation tests ==========
 
 TEST_F(ViewTest, ScreenToWorldConversion) {
-    sf::Vector2i screenPoint(400, 300);
-    sf::Vector2f worldPoint = view->screenToWorld(screenPoint);
+    const sf::Vector2i screenPoint(400, 300);
+    const sf::Vector2f worldPoint = view->screenToWorld(screenPoint);
 
-    EXPECT_FLOAT_EQ(worldPoint.x, 400.0f);
-    EXPECT_FLOAT_EQ(worldPoint.y, 300.0f);
+    EXPECT_FLOAT_EQ(worldPoint.x, 400.0F);
+    EXPECT_FLOAT_EQ(worldPoint.y, 300.0F);
 }
 
 TEST_F(ViewTest, WorldToScreenConversion) {
-    sf::Vector2f worldPoint(400.0f, 300.0f);
-    sf::Vector2i screenPoint = view->worldToScreen(worldPoint);
+    const sf::Vector2f worldPoint(400.0F, 300.0F);
+    const sf::Vector2i screenPoint = view->worldToScreen(worldPoint);
 
     EXPECT_EQ(screenPoint.x, 400);
     EXPECT_EQ(screenPoint.y, 300);
 }
 
 TEST_F(ViewTest, CoordinateConversionsAreInverse) {
-    sf::Vector2i originalScreen(123, 456);
+    const sf::Vector2i originalScreen(123, 456);
 
-    sf::Vector2f world = view->screenToWorld(originalScreen);
-    sf::Vector2i backToScreen = view->worldToScreen(world);
+    const sf::Vector2f world = view->screenToWorld(originalScreen);
+    const sf::Vector2i backToScreen = view->worldToScreen(world);
 
     EXPECT_EQ(backToScreen.x, originalScreen.x);
     EXPECT_EQ(backToScreen.y, originalScreen.y);
@@ -124,7 +126,7 @@ TEST_F(ViewTest, PickObjectReturnsCorrectObject) {
     auto obj1 = createTestObject("obj1", "Object 1", 100, 100);
     auto obj2 = createTestObject("obj2", "Object 2", 200, 200);
 
-    std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
 
     auto picked = view->pickObject({124, 124}, objects);
     EXPECT_EQ(picked, obj1);
@@ -140,7 +142,7 @@ TEST_F(ViewTest, PickObjectRespectsVisibility) {
     auto obj1 = createTestObject("obj1", "Object 1", 100, 100);
     obj1->setVisible(false);
     auto obj2 = createTestObject("obj2", "Object 2", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
 
     auto picked = view->pickObject({124, 124}, objects);
     EXPECT_EQ(picked, obj2);
@@ -150,7 +152,7 @@ TEST_F(ViewTest, PickObjectRespectsActive) {
     auto obj1 = createTestObject("obj1", "Object 1", 100, 100);
     obj1->setActive(false);
     auto obj2 = createTestObject("obj2", "Object 2", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj1, obj2};
 
     auto picked = view->pickObject({124, 124}, objects);
     EXPECT_EQ(picked, obj2);
@@ -159,7 +161,7 @@ TEST_F(ViewTest, PickObjectRespectsActive) {
 TEST_F(ViewTest, PickObjectRespectsZOrder) {
     auto objLow = createTestObject("low", "Low", 100, 100, 10);
     auto objHigh = createTestObject("high", "High", 100, 100, 20);
-    std::vector<std::shared_ptr<GameObject>> objects = {objLow, objHigh};
+    const std::vector<std::shared_ptr<GameObject>> objects = {objLow, objHigh};
 
     auto picked = view->pickObject({124, 124}, objects);
     EXPECT_EQ(picked, objHigh);
@@ -178,7 +180,7 @@ TEST_F(ViewTest, PickObjectHandlesNullptrs) {
 }
 
 TEST_F(ViewTest, PickObjectWithEmptyList) {
-    std::vector<std::shared_ptr<GameObject>> empty;
+    const std::vector<std::shared_ptr<GameObject>> empty;
 
     auto picked = view->pickObject({100, 100}, empty);
     EXPECT_EQ(picked, nullptr);
@@ -191,7 +193,7 @@ TEST_F(ViewTest, SortObjectsByZOrderWorks) {
     auto objMid = createTestObject("mid", "Mid", 0, 0, 20);
     auto objLow = createTestObject("low", "Low", 0, 0, 10);
 
-    std::vector<std::shared_ptr<GameObject>> objects = {objHigh, objMid, objLow};
+    const std::vector<std::shared_ptr<GameObject>> objects = {objHigh, objMid, objLow};
 
     auto picked = view->pickObject({24, 24}, objects);
     EXPECT_EQ(picked, objHigh);
@@ -220,28 +222,31 @@ TEST_F(ViewTest, SortRemovesNullptrs) {
 TEST_F(ViewTest, HandleResizeEvent) {
     window.setSize(sf::Vector2u(1024, 768));
 
-    sf::Event resizeEvent;
+    sf::Event resizeEvent{};
     resizeEvent.type = sf::Event::Resized;
-    resizeEvent.size.width = 1024;
-    resizeEvent.size.height = 768;
+
+    sf::Event::SizeEvent sizeEvent;
+    sizeEvent.width = 1024;
+    sizeEvent.height = 768;
+    resizeEvent.size = sizeEvent;
 
     EXPECT_NO_THROW(view->handleEvent(resizeEvent));
 
-    sf::Vector2i screenPoint(1024, 768);
-    sf::Vector2f worldPoint = view->screenToWorld(screenPoint);
+    const sf::Vector2i screenPoint(1024, 768);
+    const sf::Vector2f worldPoint = view->screenToWorld(screenPoint);
 
-    EXPECT_FLOAT_EQ(worldPoint.x, 1024.0f);
-    EXPECT_FLOAT_EQ(worldPoint.y, 768.0f);
+    EXPECT_FLOAT_EQ(worldPoint.x, 1024.0F);
+    EXPECT_FLOAT_EQ(worldPoint.y, 768.0F);
 }
 
 TEST_F(ViewTest, HandleOtherEvents) {
-    sf::Event keyEvent;
+    sf::Event keyEvent{};
     keyEvent.type = sf::Event::KeyPressed;
     keyEvent.key.code = sf::Keyboard::Space;
 
     EXPECT_NO_THROW(view->handleEvent(keyEvent));
 
-    sf::Event mouseEvent;
+    sf::Event mouseEvent{};
     mouseEvent.type = sf::Event::MouseButtonPressed;
     EXPECT_NO_THROW(view->handleEvent(mouseEvent));
 }
@@ -271,23 +276,24 @@ TEST_F(ViewTest, CanSetAndGetConfig) {
 // ========== Rendering tests ==========
 
 TEST_F(ViewTest, RenderWithEmptyList) {
-    std::vector<std::shared_ptr<GameObject>> empty;
+    const std::vector<std::shared_ptr<GameObject>> empty;
 
     EXPECT_NO_THROW(view->render(empty));
 }
 
 TEST_F(ViewTest, RenderWithSingleObject) {
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
 
 TEST_F(ViewTest, RenderWithMultipleObjects) {
     std::vector<std::shared_ptr<GameObject>> objects;
+    objects.reserve(10);
     for (int i = 0; i < 10; i++) {
         objects.push_back(createTestObject(
-            "obj" + std::to_string(i), "Object " + std::to_string(i), i * 50, i * 50, i));
+            "obj" + std::to_string(i), "Object " + std::to_string(i), static_cast<float>(i * 50), static_cast<float>(i * 50), i));
     }
 
     EXPECT_NO_THROW(view->render(objects));
@@ -311,7 +317,7 @@ TEST_F(ViewTest, RenderWithInvisibleObjects) {
     auto visibleObj = createTestObject("visible", "Visible", 100, 100);
     auto invisibleObj = createTestObject("invisible", "Invisible", 200, 200);
     invisibleObj->setVisible(false);
-    std::vector<std::shared_ptr<GameObject>> objects = {visibleObj, invisibleObj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {visibleObj, invisibleObj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
@@ -325,7 +331,7 @@ TEST_F(ViewTest, WorksWithRealCard) {
     card->setFaceUp(true);
     card->setPosition(100, 100);
 
-    std::vector<std::shared_ptr<GameObject>> objects = {card};
+    const std::vector<std::shared_ptr<GameObject>> objects = {card};
 
     EXPECT_NO_THROW(view->render(objects));
 
@@ -336,9 +342,9 @@ TEST_F(ViewTest, WorksWithRealCard) {
 TEST_F(ViewTest, WorksWithRealChip) {
     auto chip = std::make_shared<Chip>("chip1", "Test Chip");
     chip->setTexture(&chipTexture);
-    chip->setRadius(32.f);
+    chip->setRadius(32.F);
     chip->setPosition(100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {chip};
+    const std::vector<std::shared_ptr<GameObject>> objects = {chip};
 
     EXPECT_NO_THROW(view->render(objects));
 
@@ -355,7 +361,7 @@ TEST_F(ViewTest, HUDWithAllFeaturesEnabled) {
     config.showControls = true;
 
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
@@ -367,7 +373,7 @@ TEST_F(ViewTest, HUDWithSomeFeaturesEnabled) {
     config.showControls = true;
 
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
@@ -391,8 +397,8 @@ TEST_F(ViewTest, HandlesLargeNumberOfObjects) {
     for (int i = 0; i < 1000; ++i) {
         auto obj = createTestObject("obj" + std::to_string(i),
                                     "Object " + std::to_string(i),
-                                    i % 10 * 50,
-                                    i / 10 * 50,
+                                    static_cast<float>(i % 10 * 50),
+                                    static_cast<float>(i / 10 * 50),
                                     i % 100);
         manyObjects.push_back(obj);
     }
@@ -405,13 +411,15 @@ TEST_F(ViewTest, HandlesLargeNumberOfObjects) {
 
 TEST_F(ViewTest, HandlesWindowResizeDuringRender) {
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     window.setSize(sf::Vector2u(1024, 768));
-    sf::Event resizeEvent;
+    sf::Event resizeEvent{};
     resizeEvent.type = sf::Event::Resized;
-    resizeEvent.size.width = 1024;
-    resizeEvent.size.height = 768;
+    sf::Event::SizeEvent sizeData;
+    sizeData.width = 1024;
+    sizeData.height = 768;
+    resizeEvent.size = sizeData;
     view->handleEvent(resizeEvent);
 
     EXPECT_NO_THROW(view->render(objects));
@@ -419,7 +427,7 @@ TEST_F(ViewTest, HandlesWindowResizeDuringRender) {
 
 TEST_F(ViewTest, HandlesMultipleRenderCalls) {
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     for (int i = 0; i < 10; ++i) {
         EXPECT_NO_THROW(view->render(objects));
@@ -428,10 +436,10 @@ TEST_F(ViewTest, HandlesMultipleRenderCalls) {
 
 TEST_F(ViewTest, HandlesUpdateAndRenderInterleaved) {
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     for (int i = 0; i < 10; ++i) {
-        view->update(0.016f);
+        view->update(0.016F);
         EXPECT_NO_THROW(view->render(objects));
     }
 }
@@ -444,7 +452,7 @@ TEST_F(ViewTest, HandlesInvalidFontPath) {
     config.showFPS = true;
 
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
@@ -455,7 +463,7 @@ TEST_F(ViewTest, HandlesValidFontPath) {
     config.showFPS = true;
 
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
