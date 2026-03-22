@@ -1,4 +1,5 @@
 #include "ui/View.hpp"
+
 #include <ranges>
 
 namespace dice::view {
@@ -38,7 +39,8 @@ void View::handleEvent(const sf::Event& event) {
     if (event.type == sf::Event::Resized) {
         unsigned int width = event.size.width;
         unsigned int height = event.size.height;
-        const sf::FloatRect visibleArea(0.F, 0.F, static_cast<float>(width), static_cast<float>(height));
+        const sf::FloatRect visibleArea(
+            0.F, 0.F, static_cast<float>(width), static_cast<float>(height));
         window_.setView(sf::View(visibleArea));
         spdlog::debug("Window resized to {}x{}", width, height);
     }
@@ -145,7 +147,8 @@ void View::drawObjectCount(const std::vector<std::shared_ptr<core::GameObject>>&
 void View::drawControls() {
     const std::vector<std::string> controls = {"Controls:", "ESC - Exit"};
 
-    const float startY = static_cast<float>(window_.getSize().y) - 30.0F * static_cast<float>(controls.size());
+    const float startY =
+        static_cast<float>(window_.getSize().y) - 30.0F * static_cast<float>(controls.size());
     float y = startY;
 
     for (const auto& control : controls) {

@@ -9,11 +9,11 @@
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 
+using dice::components::Card;
+using dice::components::Chip;
+using dice::core::GameObject;
 using dice::view::View;
 using dice::view::ViewConfig;
-using dice::core::GameObject;
-using dice::components::Chip;
-using dice::components::Card;
 
 // ========== Fixture ==========
 
@@ -292,8 +292,11 @@ TEST_F(ViewTest, RenderWithMultipleObjects) {
     std::vector<std::shared_ptr<GameObject>> objects;
     objects.reserve(10);
     for (int i = 0; i < 10; i++) {
-        objects.push_back(createTestObject(
-            "obj" + std::to_string(i), "Object " + std::to_string(i), static_cast<float>(i * 50), static_cast<float>(i * 50), i));
+        objects.push_back(createTestObject("obj" + std::to_string(i),
+                                           "Object " + std::to_string(i),
+                                           static_cast<float>(i * 50),
+                                           static_cast<float>(i * 50),
+                                           i));
     }
 
     EXPECT_NO_THROW(view->render(objects));
