@@ -37,8 +37,9 @@ void View::update(float delta_time) {
 
 void View::handleEvent(const sf::Event& event) {
     if (event.type == sf::Event::Resized) {
-        unsigned int width = event.size.width;
-        unsigned int height = event.size.height;
+        sf::Event::SizeEvent sizeData = event.size;
+        unsigned int width = sizeData.width;
+        unsigned int height = sizeData.height;
         const sf::FloatRect visibleArea(
             0.F, 0.F, static_cast<float>(width), static_cast<float>(height));
         window_.setView(sf::View(visibleArea));

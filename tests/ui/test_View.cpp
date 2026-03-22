@@ -65,12 +65,15 @@ protected:
         obj->setZOrder(z_order);
         return obj;
     }
-
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     sf::RenderWindow window;
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     std::unique_ptr<View> view;
-
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     sf::Texture testTexture;
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     sf::Texture cardTexture;
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     sf::Texture chipTexture;
 };
 
@@ -222,13 +225,7 @@ TEST_F(ViewTest, SortRemovesNullptrs) {
 TEST_F(ViewTest, HandleResizeEvent) {
     window.setSize(sf::Vector2u(1024, 768));
 
-    sf::Event resizeEvent{};
-    resizeEvent.type = sf::Event::Resized;
-
-    sf::Event::SizeEvent sizeEvent;
-    sizeEvent.width = 1024;
-    sizeEvent.height = 768;
-    resizeEvent.size = sizeEvent;
+    sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
 
     EXPECT_NO_THROW(view->handleEvent(resizeEvent));
 
@@ -240,9 +237,7 @@ TEST_F(ViewTest, HandleResizeEvent) {
 }
 
 TEST_F(ViewTest, HandleOtherEvents) {
-    sf::Event keyEvent{};
-    keyEvent.type = sf::Event::KeyPressed;
-    keyEvent.key.code = sf::Keyboard::Space;
+    sf::Event keyEvent{.type = sf::Event::KeyPressed, .key = {.code = sf::Keyboard::Space}};
 
     EXPECT_NO_THROW(view->handleEvent(keyEvent));
 
@@ -388,7 +383,7 @@ TEST_F(ViewTest, HUDWithAllFeaturesDisabled) {
     config.showControls = false;
 
     auto obj = createTestObject("obj", "Object", 100, 100);
-    std::vector<std::shared_ptr<GameObject>> objects = {obj};
+    const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     EXPECT_NO_THROW(view->render(objects));
 }
@@ -401,7 +396,7 @@ TEST_F(ViewTest, HandlesLargeNumberOfObjects) {
         auto obj = createTestObject("obj" + std::to_string(i),
                                     "Object " + std::to_string(i),
                                     static_cast<float>(i % 10 * 50),
-                                    static_cast<float>(i / 10 * 50),
+                                    static_cast<float>(i) / 10 * 50,
                                     i % 100);
         manyObjects.push_back(obj);
     }
@@ -417,12 +412,7 @@ TEST_F(ViewTest, HandlesWindowResizeDuringRender) {
     const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     window.setSize(sf::Vector2u(1024, 768));
-    sf::Event resizeEvent{};
-    resizeEvent.type = sf::Event::Resized;
-    sf::Event::SizeEvent sizeData;
-    sizeData.width = 1024;
-    sizeData.height = 768;
-    resizeEvent.size = sizeData;
+    sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
     view->handleEvent(resizeEvent);
 
     EXPECT_NO_THROW(view->render(objects));
