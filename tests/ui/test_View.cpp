@@ -65,16 +65,11 @@ protected:
         obj->setZOrder(z_order);
         return obj;
     }
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    sf::RenderWindow window;
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    std::unique_ptr<View> view;
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    sf::Texture testTexture;
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    sf::Texture cardTexture;
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    sf::Texture chipTexture;
+    sf::RenderWindow window;    // NOLINT
+    std::unique_ptr<View> view; // NOLINT
+    sf::Texture testTexture;    // NOLINT
+    sf::Texture cardTexture;    // NOLINT
+    sf::Texture chipTexture;    // NOLINT
 };
 
 // ========== Constructor Tests ==========
@@ -225,7 +220,7 @@ TEST_F(ViewTest, SortRemovesNullptrs) {
 TEST_F(ViewTest, HandleResizeEvent) {
     window.setSize(sf::Vector2u(1024, 768));
 
-    sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
+    const sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
 
     EXPECT_NO_THROW(view->handleEvent(resizeEvent));
 
@@ -237,7 +232,7 @@ TEST_F(ViewTest, HandleResizeEvent) {
 }
 
 TEST_F(ViewTest, HandleOtherEvents) {
-    sf::Event keyEvent{.type = sf::Event::KeyPressed, .key = {.code = sf::Keyboard::Space}};
+    const sf::Event keyEvent{.type = sf::Event::KeyPressed, .key = {.code = sf::Keyboard::Space}};
 
     EXPECT_NO_THROW(view->handleEvent(keyEvent));
 
@@ -412,7 +407,7 @@ TEST_F(ViewTest, HandlesWindowResizeDuringRender) {
     const std::vector<std::shared_ptr<GameObject>> objects = {obj};
 
     window.setSize(sf::Vector2u(1024, 768));
-    sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
+    const sf::Event resizeEvent{.type = sf::Event::Resized, .size = {1024, 768}};
     view->handleEvent(resizeEvent);
 
     EXPECT_NO_THROW(view->render(objects));
