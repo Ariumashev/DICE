@@ -65,3 +65,17 @@ TEST(ResourceManagerTest, UnloadAndClear) {
     manager.clear();
     EXPECT_EQ(manager.get("res2"), nullptr);
 }
+
+TEST(ResourceManagerTest, Create) {
+    dice::core::ResourceManager<sf::Texture> TextureManager;
+    auto tex = TextureManager.create("chip");
+    tex.create(64, 64);
+    sf::Image chipImage;
+    chipImage.create(64, 64, sf::Color::Red);
+    tex.update(chipImage);
+
+    auto game_obj = std::make_shared<dice::components::Chip>("chip_1", "Red Chip");
+    game_obj->setTexture(tex);
+
+    ASSERT_NE(TextureManager.get("chip"), nullptr);
+}
