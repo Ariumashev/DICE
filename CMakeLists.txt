@@ -101,6 +101,8 @@ target_compile_features(imgui_lib PUBLIC cxx_std_20)
 add_library(dice_core STATIC
   src/core/GameObject.cpp
   src/components/Chip.cpp
+  src/components/Card.cpp
+  src/ui/View.cpp
   src/core/Model.cpp
   src/components/Card.cpp
 )
@@ -156,6 +158,7 @@ enable_testing()
 add_executable(dice_tests
   tests/core/test_GameObject.cpp
   tests/components/test_Chip.cpp
+  tests/ui/test_View.cpp
   tests/core/test_Model.cpp
   tests/core/test_ResourceManager.cpp
 )
