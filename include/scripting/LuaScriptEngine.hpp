@@ -1,0 +1,62 @@
+#ifndef DICE_SCRIPTING_LUA_SCRIPT_ENGINE_HPP
+#define DICE_SCRIPTING_LUA_SCRIPT_ENGINE_HPP
+
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+extern "C" {
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+}
+#include <sol/sol.hpp>
+
+namespace dice::core {
+class GameObject;
+} // namespace dice::core
+
+namespace dice::scripting {
+
+class LuaScript;
+
+using UiCallback = std::function<void(const std::string&)>;
+
+class LuaScriptEngine {
+public:
+    LuaScriptEngine();
+    ~LuaScriptEngine() = default;
+
+    LuaScriptEngine(const LuaScriptEngine&) = delete;
+    LuaScriptEngine& operator=(const LuaScriptEngine&) = delete;
+    LuaScriptEngine(LuaScriptEngine&&) = delete;
+    LuaScriptEngine& operator=(LuaScriptEngine&&) = delete;
+
+    std::unique_ptr<LuaScript> createFromSource(const std::string& source);
+
+    std::unique_ptr<LuaScript> createFromFile(const std::filesystem::path& path);
+
+    bool attachScript(dice::core::GameObject& obj, bool force_reload = false);
+
+    bool fireEvent(const std::string& event_name, dice::core::GameObject* obj);
+
+    void detachScript(const std::string& object_id);
+
+    void registerCallback(const std::string& name, UiCallback callback);
+
+private:
+    sol::state lua_;
+    std::unordered_map<std::string, std::unique_ptr<LuaScript>> scriptRegistry_;
+    std::unordered_map<std::string, UiCallback> callbacks_;
+
+    void initLibraries();
+    void registerGameObjectType();
+    void registerStandardCallbacks();
+    sol::environment makeEnvironment();
+};
+
+} // namespace dice::scripting
+
+#endif // DICE_SCRIPTING_LUA_SCRIPT_ENGINE_HPP
