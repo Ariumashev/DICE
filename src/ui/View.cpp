@@ -161,7 +161,7 @@ void View::drawControls() {
 
 // Support functions
 
-sf::Font& View::getFont() {
+sf::Font& View::getFont() const {
     if (!fontLoaded_) {
         if (font_.loadFromFile(config_.fontPath)) {
             fontLoaded_ = true;
@@ -177,8 +177,9 @@ sf::Text View::createText(
     const std::string& str, unsigned int size, const sf::Color& color, float x, float y) const {
     sf::Text text;
 
+    sf::Font& font = getFont();
     if (fontLoaded_) {
-        text.setFont(font_);
+        text.setFont(font);
     }
     text.setString(str);
     text.setCharacterSize(size);

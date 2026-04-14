@@ -82,7 +82,7 @@ private:
 
     // Support functions
 
-    sf::Font& getFont();
+    sf::Font& getFont() const;
     sf::Text createText(
         const std::string& str, unsigned int size, const sf::Color& color, float x, float y) const;
     static void sortObjectsByZOrder(std::vector<std::shared_ptr<core::GameObject>>& objects);
