@@ -101,6 +101,8 @@ target_compile_features(imgui_lib PUBLIC cxx_std_20)
 add_library(dice_core STATIC
   src/core/GameObject.cpp
   src/components/Chip.cpp
+  src/components/Card.cpp
+  src/ui/View.cpp
   src/core/Model.cpp
   src/components/Card.cpp
 )
@@ -121,6 +123,35 @@ target_link_libraries(dice_core
 )
 
 
+find_package(Lua 5.3 REQUIRED)
+
+# ----------------------------
+# Scripting library
+# ----------------------------
+add_library(dice_scripting STATIC
+  src/scripting/LuaScriptEngine.cpp
+  src/scripting/LuaScript.cpp
+)
+
+target_include_directories(dice_scripting
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${LUA_INCLUDE_DIR}
+)
+
+target_link_libraries(dice_scripting
+  PUBLIC
+    dice_core
+    ${LUA_LIBRARY}
+    spdlog::spdlog
+)
+
+if(TARGET sol2::sol2)
+  target_link_libraries(dice_scripting PUBLIC sol2::sol2)
+else()
+  target_include_directories(dice_scripting PUBLIC ${sol2_SOURCE_DIR}/include)
+endif()
+
 # ----------------------------
 # Application
 # ----------------------------
@@ -133,16 +164,10 @@ target_include_directories(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/include
 )
 
-find_package(Lua 5.3 REQUIRED)
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${LUA_INCLUDE_DIR})
-
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
-    dice_core
-
+    dice_scripting
     sfml-network
-    ${LUA_LIBRARY}
     imgui_lib
     spdlog::spdlog
     nlohmann_json::nlohmann_json
@@ -156,6 +181,7 @@ enable_testing()
 add_executable(dice_tests
   tests/core/test_GameObject.cpp
   tests/components/test_Chip.cpp
+  tests/ui/test_View.cpp
   tests/core/test_Model.cpp
   tests/core/test_ResourceManager.cpp
 )
@@ -166,16 +192,19 @@ target_link_libraries(dice_tests
     GTest::gtest_main
 )
 
+add_executable(dice_scripting_tests
+  tests/scripting/test_LuaScriptEngine.cpp
+)
+
+target_link_libraries(dice_scripting_tests
+  PRIVATE
+    dice_scripting
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(dice_tests)
-
-
-# in case of sol2 is not just header-only
-if(TARGET sol2::sol2)
-  target_link_libraries(${PROJECT_NAME} PRIVATE sol2::sol2)
-else()
-  target_include_directories(${PROJECT_NAME} PRIVATE ${sol2_SOURCE_DIR}/include)
-endif()
+gtest_discover_tests(dice_scripting_tests)
 
 # ----------------------------
 # Application compile options
