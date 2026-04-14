@@ -10,9 +10,9 @@
 #include "ui/View.hpp"
 #include <spdlog/spdlog.h>
 
-using dice::core::GameObject;
 using dice::components::Card;
 using dice::components::Chip;
+using dice::core::GameObject;
 using dice::view::View;
 using dice::view::ViewConfig;
 
@@ -135,7 +135,7 @@ int main() {
 
                     if (clicked->getType() == "Card") {
                         auto card = std::dynamic_pointer_cast<Card>(clicked);
-                        if (card){
+                        if (card) {
                             card->flip();
                         }
                     }
