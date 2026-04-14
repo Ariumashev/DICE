@@ -177,7 +177,7 @@ sf::Text View::createText(
     const std::string& str, unsigned int size, const sf::Color& color, float x, float y) const {
     sf::Text text;
 
-    sf::Font& font = getFont();
+    const sf::Font& font = getFont();
     if (fontLoaded_) {
         text.setFont(font);
     }

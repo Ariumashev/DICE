@@ -10,9 +10,11 @@
 #include "ui/View.hpp"
 #include <spdlog/spdlog.h>
 
-using namespace dice::core;
-using namespace dice::components;
-using namespace dice::view;
+using dice::core::GameObject;
+using dice::components::Card;
+using dice::components::Chip;
+using dice::view::View;
+using dice::view::ViewConfig;
 
 // Function for creating textures
 sf::Texture createColoredTexture(int width, int height, const sf::Color& color) {
@@ -41,11 +43,11 @@ int main() {
     view.setConfig(config);
 
     // Creating textures
-    sf::Texture cardFrontTex = createColoredTexture(100, 140, sf::Color(220, 220, 255));
-    sf::Texture cardBackTex = createColoredTexture(100, 140, sf::Color(80, 80, 120));
-    sf::Texture chipTex = createColoredTexture(64, 64, sf::Color::Red);
-    sf::Texture blueChipTex = createColoredTexture(64, 64, sf::Color(100, 100, 255));
-    sf::Texture boardTex = createColoredTexture(800, 600, sf::Color(150, 150, 150));
+    const sf::Texture cardFrontTex = createColoredTexture(100, 140, sf::Color(220, 220, 255));
+    const sf::Texture cardBackTex = createColoredTexture(100, 140, sf::Color(80, 80, 120));
+    const sf::Texture chipTex = createColoredTexture(64, 64, sf::Color::Red);
+    const sf::Texture blueChipTex = createColoredTexture(64, 64, sf::Color(100, 100, 255));
+    const sf::Texture boardTex = createColoredTexture(800, 600, sf::Color(150, 150, 150));
 
     std::vector<std::shared_ptr<GameObject>> objects;
 
@@ -53,7 +55,7 @@ int main() {
     auto board = std::make_shared<GameObject>("board", "Board");
     board->setTexture(&boardTex);
     board->setColor(sf::Color(200, 180, 140));
-    board->setScale(1.6f, 1.2f);
+    board->setScale(1.6F, 1.2F);
     board->setPosition(640, 360);
     board->setZOrder(0);
     objects.push_back(board);
@@ -80,7 +82,7 @@ int main() {
     // Chips
     auto chip1 = std::make_shared<Chip>("chip1", "Red Chip");
     chip1->setTexture(&chipTex);
-    chip1->setRadius(30.0f);
+    chip1->setRadius(30.0F);
     chip1->setPosition(600, 350);
     chip1->setZOrder(20);
     chip1->setPlayer(1);
@@ -88,7 +90,7 @@ int main() {
 
     auto chip2 = std::make_shared<Chip>("chip2", "Blue Chip");
     chip2->setTexture(&blueChipTex);
-    chip2->setRadius(30.0f);
+    chip2->setRadius(30.0F);
     chip2->setPosition(700, 380);
     chip2->setZOrder(20);
     chip2->setPlayer(2);
@@ -105,23 +107,24 @@ int main() {
     spdlog::info("Entering main loop...");
 
     while (window.isOpen()) {
-        float deltaTime = clock.restart().asSeconds();
+        const float deltaTime = clock.restart().asSeconds();
 
-        sf::Event event;
+        sf::Event event{};
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
-
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
                 window.close();
             }
 
             // Mouse click
             if (event.type == sf::Event::MouseButtonPressed &&
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
                 event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                sf::Vector2f worldPos = view.screenToWorld(mousePos);
+                const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                const sf::Vector2f worldPos = view.screenToWorld(mousePos);
 
                 auto clicked = view.pickObject(worldPos, objects);
                 if (clicked) {
@@ -132,8 +135,9 @@ int main() {
 
                     if (clicked->getType() == "Card") {
                         auto card = std::dynamic_pointer_cast<Card>(clicked);
-                        if (card)
+                        if (card){
                             card->flip();
+                        }
                     }
                 } else {
                     selectedObject = nullptr;
@@ -141,12 +145,13 @@ int main() {
             }
 
             if (event.type == sf::Event::MouseMoved && isDragging && selectedObject) {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                sf::Vector2f worldPos = view.screenToWorld(mousePos);
+                const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                const sf::Vector2f worldPos = view.screenToWorld(mousePos);
                 selectedObject->setPosition(worldPos - dragOffset);
             }
 
             if (event.type == sf::Event::MouseButtonReleased &&
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
                 event.mouseButton.button == sf::Mouse::Left) {
                 isDragging = false;
             }
