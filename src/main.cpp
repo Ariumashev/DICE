@@ -119,43 +119,6 @@ int main() {
                 window.close();
             }
 
-            // Mouse click
-            if (event.type == sf::Event::MouseButtonPressed &&
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-                event.mouseButton.button == sf::Mouse::Left) {
-                const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                const sf::Vector2f worldPos = view.screenToWorld(mousePos);
-
-                auto clicked = view.pickObject(worldPos, objects);
-                if (clicked) {
-                    selectedObject = clicked;
-                    isDragging = true;
-                    dragOffset = worldPos - clicked->getPosition();
-                    spdlog::info("Selected: {}", clicked->getName());
-
-                    if (clicked->getType() == "Card") {
-                        auto card = std::dynamic_pointer_cast<Card>(clicked);
-                        if (card) {
-                            card->flip();
-                        }
-                    }
-                } else {
-                    selectedObject = nullptr;
-                }
-            }
-
-            if (event.type == sf::Event::MouseMoved && isDragging && selectedObject) {
-                const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                const sf::Vector2f worldPos = view.screenToWorld(mousePos);
-                selectedObject->setPosition(worldPos - dragOffset);
-            }
-
-            if (event.type == sf::Event::MouseButtonReleased &&
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-                event.mouseButton.button == sf::Mouse::Left) {
-                isDragging = false;
-            }
-
             view.handleEvent(event);
         }
 
