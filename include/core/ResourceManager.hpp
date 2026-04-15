@@ -42,7 +42,22 @@ public:
             return fallback_;
         }
 
-        resources_[id] = {filename, res};
+        resources_.emplace(id, std::make_pair(filename, res));
+        return res;
+    }
+
+    // ========== Create resource object ==========
+    std::shared_ptr<Resource> create(const std::string& id) {
+        if (auto it = resources_.find(id); it != resources_.end()) {
+            spdlog::error("ResourceManager: failed to create a new resource object by assigning "
+                          "existing id - '{}'",
+                          id);
+
+            return fallback_;
+        }
+
+        auto res = std::make_shared<Resource>();
+        resources_.emplace(id, std::make_pair("", res));
         return res;
     }
 
@@ -101,6 +116,7 @@ public:
     }
 
 private:
+    // id : { filename, shared_ptr<Resource> }
     std::unordered_map<std::string, std::pair<std::string, std::shared_ptr<Resource>>> resources_{};
     std::shared_ptr<Resource> fallback_ = nullptr;
 };
