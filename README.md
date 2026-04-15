@@ -22,7 +22,7 @@
   <h3 align="center">DICE</h3>
 
   <p align="center">
-    Кинь игральный кубик и создай настольную игру своей мечты
+    Бросьте игральный кубик и создай настольную игру своей мечты
     <br />
     &middot;
     <a href="https://github.com/qx1ls-dr/DICE/issues/new?labels=bug&template=bug-report---.md">Написать о баге</a>
