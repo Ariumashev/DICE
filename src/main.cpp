@@ -99,9 +99,6 @@ int main() {
     spdlog::info("Created {} objects", objects.size());
 
     // Variables for interaction
-    std::shared_ptr<GameObject> selectedObject = nullptr;
-    bool isDragging = false;
-    sf::Vector2f dragOffset;
     sf::Clock clock;
 
     spdlog::info("Entering main loop...");
