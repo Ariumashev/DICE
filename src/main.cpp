@@ -1,95 +1,131 @@
 #include <iostream>
+#include <memory>
+#include <vector>
 
 #include <SFML/Graphics.hpp>
-#include <nlohmann/json.hpp>
 
+#include "components/Card.hpp"
+#include "components/Chip.hpp"
+#include "core/GameObject.hpp"
+#include "ui/View.hpp"
 #include <spdlog/spdlog.h>
 
-// Для sol2 и Lua
-extern "C" {
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
+using dice::components::Card;
+using dice::components::Chip;
+using dice::core::GameObject;
+using dice::view::View;
+using dice::view::ViewConfig;
+
+// Function for creating textures
+sf::Texture createColoredTexture(int width, int height, const sf::Color& color) {
+    sf::Texture texture;
+    texture.create(width, height);
+    sf::Image image;
+    image.create(width, height, color);
+    texture.update(image);
+    return texture;
 }
-#include <sol/sol.hpp>
 
 int main() {
-    // Инициализация логгера
+    spdlog::set_level(spdlog::level::debug);
     spdlog::info("DICE Application Starting...");
 
-    // Создание окна SFML
-    sf::RenderWindow window(sf::VideoMode(800, 600), "DICE - Board Game Engine");
+    sf::RenderWindow window(sf::VideoMode(1280, 720), "DICE");
     window.setFramerateLimit(60);
 
-    // Тест JSON
-    nlohmann::json config;
-    config["window"]["width"] = 800;
-    config["window"]["height"] = 600;
-    config["title"] = "DICE";
-    spdlog::info("Configuration: {}", config.dump(2));
+    View view(window);
 
-    // Тест Lua
-    sol::state lua;
-    lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
+    ViewConfig config;
+    config.backgroundColor = sf::Color(30, 30, 40);
+    config.showFPS = true;
+    config.showObjectCount = true;
+    config.showControls = true;
+    view.setConfig(config);
 
-    lua.script(R"(
-        print("Lua integration test successful!")
-        function greet(name)
-            return "Hello from Lua, " .. name .. "!"
-        end
-    )");
+    // Creating textures
+    const sf::Texture cardFrontTex = createColoredTexture(100, 140, sf::Color(220, 220, 255));
+    const sf::Texture cardBackTex = createColoredTexture(100, 140, sf::Color(80, 80, 120));
+    const sf::Texture chipTex = createColoredTexture(64, 64, sf::Color::Red);
+    const sf::Texture blueChipTex = createColoredTexture(64, 64, sf::Color(100, 100, 255));
+    const sf::Texture boardTex = createColoredTexture(800, 600, sf::Color(150, 150, 150));
 
-    std::string greeting = lua["greet"]("DICE");
-    spdlog::info("{}", greeting);
+    std::vector<std::shared_ptr<GameObject>> objects;
 
-    // Создание простого объекта для отрисовки
-    sf::CircleShape shape(50.f);
-    shape.setFillColor(sf::Color::Red);
-    shape.setPosition(375.f, 275.f);
+    // Board
+    auto board = std::make_shared<GameObject>("board", "Board");
+    board->setTexture(&boardTex);
+    board->setColor(sf::Color(200, 180, 140));
+    board->setScale(1.6F, 1.2F);
+    board->setPosition(640, 360);
+    board->setZOrder(0);
+    objects.push_back(board);
 
-    sf::Font font;
-    sf::Text text;
-    text.setString("DICE Engine\nНажмите ESC для выхода");
-    text.setCharacterSize(24);
-    text.setFillColor(sf::Color::White);
-    text.setPosition(300.f, 50.f);
+    // Cards
+    auto card1 = std::make_shared<Card>("card1", "Dragon");
+    card1->setFrontTexture(&cardFrontTex);
+    card1->setBackTexture(&cardBackTex);
+    card1->setPosition(300, 300);
+    card1->setZOrder(10);
+    card1->setPlayer(1);
+    card1->setFaceUp(true);
+    objects.push_back(card1);
 
-    spdlog::info("Вход в основной цикл...");
+    auto card2 = std::make_shared<Card>("card2", "Mage");
+    card2->setFrontTexture(&cardFrontTex);
+    card2->setBackTexture(&cardBackTex);
+    card2->setPosition(420, 320);
+    card2->setZOrder(11);
+    card2->setPlayer(2);
+    card2->setFaceUp(false);
+    objects.push_back(card2);
 
-    // Основной игровой цикл
+    // Chips
+    auto chip1 = std::make_shared<Chip>("chip1", "Red Chip");
+    chip1->setTexture(&chipTex);
+    chip1->setRadius(30.0F);
+    chip1->setPosition(600, 350);
+    chip1->setZOrder(20);
+    chip1->setPlayer(1);
+    objects.push_back(chip1);
+
+    auto chip2 = std::make_shared<Chip>("chip2", "Blue Chip");
+    chip2->setTexture(&blueChipTex);
+    chip2->setRadius(30.0F);
+    chip2->setPosition(700, 380);
+    chip2->setZOrder(20);
+    chip2->setPlayer(2);
+    objects.push_back(chip2);
+
+    spdlog::info("Created {} objects", objects.size());
+
+    // Variables for interaction
+    sf::Clock clock;
+
+    spdlog::info("Entering main loop...");
+
     while (window.isOpen()) {
-        sf::Event event;
+        const float deltaTime = clock.restart().asSeconds();
+
+        sf::Event event{};
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
-
-            if (event.type == sf::Event::KeyPressed) {
-                if (event.key.code == sf::Keyboard::Escape) {
-                    window.close();
-                }
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
+                window.close();
             }
 
-            // Пример: вращение фигуры по клику мыши
-            if (event.type == sf::Event::MouseButtonPressed) {
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    shape.rotate(45.f);
-                    spdlog::debug("Форма повернута");
-                }
-            }
+            view.handleEvent(event);
         }
 
-        // Очистка экрана
-        window.clear(sf::Color(30, 30, 30));
+        view.update(deltaTime);
 
-        // Отрисовка
-        window.draw(shape);
-        window.draw(text);
+        view.render(objects);
 
-        // Отображение
         window.display();
     }
 
-    spdlog::info("Приложение DICE завершает работу...");
+    spdlog::info("Application finished");
     return 0;
 }
